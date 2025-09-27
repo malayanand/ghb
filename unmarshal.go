@@ -110,19 +110,24 @@ func unmarshalMap(fd protoreflect.FieldDescriptor, msg proto.Message, value any,
 		return fmt.Errorf("expected map for field %s, got %T", fd.Name(), value)
 	}
 	mp := msg.ProtoReflect().Mutable(fd).Map()
+	valueDesc := fd.MapValue()
 	for k, v := range mapValue {
-		val := mp.NewValue()
-		if fd.IsList() {
-			if err := unmarshalList(fd, msg, v, options); err != nil {
+		var val protoreflect.Value
+		if valueDesc.IsList() {
+			val = mp.NewValue()
+			if err := unmarshalList(valueDesc, msg, v, options); err != nil {
 				return err
 			}
-		} else if fd.Kind() == protoreflect.MessageKind {
+		} else if valueDesc.Kind() == protoreflect.MessageKind {
+			val = mp.NewValue()
 			if err := unmarshalMessage(val.Message().Interface(), v, options); err != nil {
 				return err
 			}
 		} else {
-			if err := unmarshalField(fd, msg, v); err != nil {
+			if tmp, err := scalarValue(valueDesc, v); err != nil {
 				return err
+			} else {
+				val = tmp
 			}
 		}
 		// TODO: handle support for all types of key values
@@ -139,14 +144,16 @@ func unmarshalList(fd protoreflect.FieldDescriptor, msg proto.Message, value any
 	}
 	list := msg.ProtoReflect().Mutable(fd).List()
 	for _, v := range listValue {
-		val := list.AppendMutable()
 		if fd.Kind() == protoreflect.MessageKind {
+			val := list.AppendMutable()
 			if err := unmarshalMessage(val.Message().Interface(), v, options); err != nil {
 				return err
 			}
 		} else {
-			if err := unmarshalField(fd, msg, v); err != nil {
+			if val, err := scalarValue(fd, v); err != nil {
 				return err
+			} else {
+				list.Append(val)
 			}
 		}
 	}

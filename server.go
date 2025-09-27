@@ -12,6 +12,7 @@ import (
 	"slices"
 	"sync"
 
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/malayanand/ghb/api"
@@ -151,7 +152,7 @@ func (s *Server) handleHttpRule(impl any, httpRule *api.HttpRule, methodHandler 
 		}
 
 		// TODO: build on what to pass in context.
-		ctx := context.Background()
+		ctx := buildContext(context.Background(), r)
 		dec := func(in any) error {
 			msg, ok := in.(proto.Message)
 			if !ok {
@@ -194,4 +195,12 @@ func (s *Server) handleHttpRule(impl any, httpRule *api.HttpRule, methodHandler 
 	}
 	pattern := fmt.Sprintf("%s %s", httpRule.Method.String(), path.Join("/", httpRule.Path))
 	s.mux.HandleFunc(pattern, handler)
+}
+
+func buildContext(ctx context.Context, r *http.Request) context.Context {
+	md := metadata.New(make(map[string]string, len(r.Header)))
+	for key, value := range r.Header {
+		md.Set(key, value...)
+	}
+	return metadata.NewIncomingContext(ctx, md)
 }

@@ -123,6 +123,125 @@ func Test_unmarshalBytes(t *testing.T) {
 				CreatedAt: timestamppb.New(time.Unix(1758454323, 0)),
 			},
 		},
+		{
+			name: "support for different type of inputs",
+			bytes: []byte(
+				`{
+					"id": "123",
+					"name": "John Doe",
+					"age": 30,
+					"created_at": "2025-09-21T11:32:03.000Z",
+					"emails": [
+						"user.1@gmail.com",
+						"user.2@gmail.com",
+						"user3@gmail.com"
+					],
+					"scores": {
+						"baseball": 10,
+						"football": 2
+					},
+					"friends_loc": {
+						"kevin": {
+							"first_line": "21st street",
+							"second_line": "34th street",
+							"city": {
+								"name": "New york",
+								"pincode": 560015,
+								"state": "New york",
+								"country": "USA"
+							}
+						},
+						"rachel": {
+							"first_line": "12th street",
+							"second_line": "42nd street",
+							"city": {
+								"name": "New hamshire",
+								"pincode": 560015,
+								"state": "New york",
+								"country": "USA"
+							}
+						}
+					},
+					"my_addresses": [
+						{
+							"first_line": "21st street",
+							"second_line": "34th street",
+							"city": {
+								"name": "New york",
+								"pincode": 560015,
+								"state": "New york",
+								"country": "USA"
+							}
+						},
+						{
+							"first_line": "12th street",
+							"second_line": "42nd street",
+							"city": {
+								"name": "New hamshire",
+								"pincode": 560015,
+								"state": "New york",
+								"country": "USA"
+							}
+						}
+					]
+				}`,
+			),
+			options: &unmarshalOptions{
+				timeFormat: ISOTimeFormat,
+			},
+			expected: &test.TestUser{
+				Id:        "123", // should be overridden by the param.
+				Name:      "John Doe",
+				Age:       30,
+				CreatedAt: timestamppb.New(time.Unix(1758454323, 0)),
+				Emails:    []string{"user.1@gmail.com", "user.2@gmail.com", "user3@gmail.com"},
+				Scores: map[string]int32{
+					"baseball": 10,
+					"football": 2,
+				},
+				FriendsLoc: map[string]*test.Address{
+					"kevin": {
+						FirstLine:  "21st street",
+						SecondLine: "34th street",
+						City: &test.City{
+							Name:    "New york",
+							Pincode: 560015,
+							State:   "New york",
+							Country: "USA",
+						},
+					},
+					"rachel": {
+						FirstLine:  "12th street",
+						SecondLine: "42nd street",
+						City: &test.City{
+							Name:    "New hamshire",
+							Pincode: 560015,
+							State:   "New york",
+							Country: "USA",
+						},
+					},
+				},
+				MyAddresses: []*test.Address{{
+					FirstLine:  "21st street",
+					SecondLine: "34th street",
+					City: &test.City{
+						Name:    "New york",
+						Pincode: 560015,
+						State:   "New york",
+						Country: "USA",
+					},
+				}, {
+					FirstLine:  "12th street",
+					SecondLine: "42nd street",
+					City: &test.City{
+						Name:    "New hamshire",
+						Pincode: 560015,
+						State:   "New york",
+						Country: "USA",
+					},
+				}},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -131,6 +250,8 @@ func Test_unmarshalBytes(t *testing.T) {
 			if tt.isErr {
 				require.Error(t, err)
 				return
+			} else {
+				require.NoError(t, err)
 			}
 			require.EqualExportedValues(t, tt.expected, actual)
 		})

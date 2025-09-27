@@ -10,4 +10,22 @@ message TestUser {
     string name = 2;
     int32 age = 3;
     google.protobuf.Timestamp created_at = 4;
+    repeated string emails = 5;
+    map<string, int32> scores = 6;
+    map<string, Address> friends_loc = 7;
+    repeated Address my_addresses = 8;
+}
+
+message Address {
+    string first_line = 1;
+    string second_line = 2;
+    City city = 3;
+    
+}
+
+message City {
+    string name = 1;
+    int32 pincode = 2;
+    string state = 3;
+    string country = 4;
 }
